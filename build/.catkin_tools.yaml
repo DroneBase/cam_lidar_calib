@@ -1,0 +1,6 @@
+devel_space: /home/sean/ros_docker/cam_lidar_calib/devel
+install: false
+install_space: /home/sean/ros_docker/cam_lidar_calib/install
+profile: default
+source_space: /home/sean/ros_docker/cam_lidar_calib/src
+workspace: /home/sean/ros_docker/cam_lidar_calib

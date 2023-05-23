@@ -114,7 +114,8 @@ public:
 
         cloud_sub = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh, lidar_in_topic, 1);
         image_sub = new message_filters::Subscriber<sensor_msgs::Image>(nh, camera_in_topic, 1);
-        sync = new message_filters::Synchronizer<SyncPolicy>(SyncPolicy(10), *cloud_sub, *image_sub);
+        sync = new message_filters::Synchronizer<SyncPolicy>(SyncPolicy(500), *cloud_sub, *image_sub);
+        sync->getPolicy()->setMaxIntervalDuration(ros::Duration(0, 25000000));
         sync->registerCallback(boost::bind(&camLidarCalib::callback, this, _1, _2));
         cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("points_out", 1);
         projection_matrix = cv::Mat::zeros(3, 3, CV_64F);
@@ -124,6 +125,7 @@ public:
         rvec = cv::Mat::zeros(3, 1, CV_64F);
         C_R_W = cv::Mat::eye(3, 3, CV_64F);
         c_R_w = Eigen::Matrix3d::Identity();
+        r3_old = Eigen::Vector3d(0, 0, 0);
 
         dx = readParam<double>(nh, "dx");
         dy = readParam<double>(nh, "dy");
@@ -292,11 +294,12 @@ public:
         }
 //        ROS_INFO_STREAM("No of planar_pts: " << lidar_points.size());
         ROS_WARN_STREAM("No of planar_pts: " << plane_filtered->points.size());
-//        sensor_msgs::PointCloud2 out_cloud;
-//        pcl::toROSMsg(*plane_filtered, out_cloud);
-//        out_cloud.header.frame_id = cloud_msg->header.frame_id;
-//        out_cloud.header.stamp = cloud_msg->header.stamp;
-//        cloud_pub.publish(out_cloud);
+       sensor_msgs::PointCloud2 out_cloud;
+       pcl::toROSMsg(*plane_filtered, out_cloud);
+    //    pcl::toROSMsg(*cloud_filtered_z, out_cloud);
+       out_cloud.header.frame_id = cloud_msg->header.frame_id;
+       out_cloud.header.stamp = cloud_msg->header.stamp;
+       cloud_pub.publish(out_cloud);
     }
 
     void imageHandler(const sensor_msgs::ImageConstPtr &image_msg) {
@@ -312,7 +315,7 @@ public:
                                       image_points,
                                       boardDetectedInCam);
             if(image_points.size() == object_points.size()){
-                cv::solvePnP(object_points, image_points, projection_matrix, distCoeff, rvec, tvec, false, CV_ITERATIVE);
+                cv::solvePnP(object_points, image_points, projection_matrix, distCoeff, rvec, tvec, false, cv::SOLVEPNP_ITERATIVE);
                 projected_points.clear();
                 cv::projectPoints(object_points, rvec, tvec, projection_matrix, distCoeff, projected_points, cv::noArray());
                 for(int i = 0; i < projected_points.size(); i++){
@@ -338,6 +341,8 @@ public:
 
     void runSolver() {
         if (lidar_points.size() > min_points_on_plane && boardDetectedInCam) {
+            // std::cout << "r3: \n" << r3 << std::endl;
+            // std::cout << "r3_old: \n" << r3_old << std::endl;
             if (r3.dot(r3_old) < 0.90) {
                 r3_old = r3;
                 all_normals.push_back(Nc);

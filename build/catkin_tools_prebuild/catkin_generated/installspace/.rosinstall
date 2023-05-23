@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/sean/ros_docker/cam_lidar_calib/install/setup.sh

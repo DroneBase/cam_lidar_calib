@@ -109,7 +109,7 @@ public:
         std::string imageOutTopic = camera_in_topic + "/projected_image";
         image_pub = nh.advertise<sensor_msgs::Image>(imageOutTopic, 1);
 
-        sync = new message_filters::Synchronizer<SyncPolicy>(SyncPolicy(10), *cloud_sub, *image_sub);
+        sync = new message_filters::Synchronizer<SyncPolicy>(SyncPolicy(100), *cloud_sub, *image_sub);
         sync->registerCallback(boost::bind(&lidarImageProjection::callback, this, _1, _2));
 
         C_T_L = Eigen::Matrix4d::Identity();
@@ -302,6 +302,8 @@ public:
         imagePoints.clear();
         publishTransforms();
         image_in = cv_bridge::toCvShare(image_msg, "bgr8")->image;
+
+        ROS_INFO_STREAM("Callback");
 
 
         double fov_x, fov_y;

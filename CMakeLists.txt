@@ -41,9 +41,11 @@ target_link_libraries(${PROJECT_NAME}_node
    ${catkin_LIBRARIES}
    ${OpenCV_LIBS}
    ${CERES_LIBRARIES}
+   ${PCL_LIBRARIES}
 )
 
 target_link_libraries(cam_lidar_proj_node
         ${catkin_LIBRARIES}
         ${OpenCV_LIBS}
+        ${PCL_LIBRARIES}
         )
